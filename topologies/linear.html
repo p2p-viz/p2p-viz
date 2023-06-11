@@ -32,7 +32,7 @@
         
     <script>
         async function main() {
-            gunInitiate();
+            // gunInitiate();
             await loginCheck();
 
             gunMaintainActivePeerIdsList();
@@ -42,16 +42,7 @@
         main();
 
         window.onGunUpdatePeerList = () => {
-            document.getElementById("peerList").innerHTML = ""
-
-            for(const alias in peerIds) {
-                document.getElementById("peerList").innerHTML += `<li class="activepeer"><b>${ alias }</b></li>`;
-            }
-            
-            let items = document.querySelectorAll('.activepeer');
-        	for (let i = 0; i < items.length; i++){
-	       	   items[i].style.background = randomColor();
-	        }
+            utilsUpdateActivePeersList("peerList");
         }
 
 

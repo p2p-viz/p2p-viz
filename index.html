@@ -1,24 +1,25 @@
 <html>
 
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
     <title>P2P Viz - Visualize P2P Topologies</title>
 </head>
 
 <body>
-    <script type="text/javascript" src="/scripts/gunManager.js"></script>
+    <!-- <script type="text/javascript" src="/scripts/gunManager.js"></script> -->
     <script type="text/javascript" src="/scripts/loginManager.js"></script>
     <script type="text/javascript" src="/scripts/utils.js"></script>
 
     <button id="logout">Log Out</button> <br />
-    <a href="/topologies/linear.html">Linear Topologies</a>  <br />
+    <a href="/topologies/linear.html">Linear Topology</a>  <br />
+    <a href="/topologies/mesh.html">Mesh Topology</a>  <br />
 
     <script>
 
         async function main() {
-            gunInitiate();
+            // gunInitiate();
             await loginCheck();
 
             document.getElementById("logout").onclick = async () => {

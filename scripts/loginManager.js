@@ -3,13 +3,14 @@ function loginIsUserLoggedIn() {
 }
 
 async function loginLogInUser(username, password) {
-    await gunLogin(username, password);
+    // await gunLogin(username, password);
     localStorage.setItem("loginUsername", username);
     localStorage.setItem("loginPassword", password);
+    window.userAlias = username;
 }
 
 async function loginCreateUser(username, password) {
-    await gunCreateAcccount(username, password);
+    // await gunCreateAcccount(username, password);
 }
 
 async function loginLogOutUser() {

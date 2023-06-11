@@ -1,16 +1,18 @@
 function onPeerOpen(id) {
     console.log("created peer with id : " + id);
-    gunAddPeerId(id);
+    //gunAddPeerId(id);
     window.peerId = id;
+    if(window.onPeerReady) window.onPeerReady(id);
 }
 
 function onPeerClose() {
-    gunRemovePeerId(window.peerId);
+    //gunRemovePeerId(window.peerId);
     delete window.peerId;
 }
 
 function onPeerConnection(conn) {
-
+    
+    if(window.onPeerNewConnection) window.onPeerNewConnection(conn);
 }
 
 function peerCreate(iceServerHost, iceServerPort, iceServerPath) {
@@ -23,11 +25,11 @@ function peerCreate(iceServerHost, iceServerPort, iceServerPath) {
     });
 
     peer.on("open", onPeerOpen);
-    peer.on("close", onPeerClose);
     peer.on("connection", onPeerConnection);
+    peer.on("close", onPeerClose);
+    
     window.addEventListener("beforeunload", (e) => {
-        gunRemovePeerId(window.peerId);
-        window.peerHandler.peer.destroy();
+        window.peer.destroy();
         (e || window.event).returnValue = null;
         return null;
     });

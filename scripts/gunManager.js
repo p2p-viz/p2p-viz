@@ -2,7 +2,7 @@ function gunInitiate() {
     const gun = Gun({
         peers: ['https://HerokuCoordinator.karmakarmeghdip.repl.co/gun']
     });
-    window.gunRoot = gun.get("p2p-viz-test-1");
+    window.gunRoot = gun.get("p2p-viz-test-5");
     window.gunUser = gun.user()
 }
 
@@ -43,14 +43,15 @@ function gunRemovePeerId(peerId) {
     gunRoot.get("not_accepting").set(gunUser)
 }
 
-function gunMaintainActivePeerIdsList() {
-    window.peerIds = {};
+function gunMaintainActivePeerIdsList(newPeerId = {}) {
+    window.peerIds = newPeerId;
 
     gunRoot.get("accepting").map().on((us) => {
         if (!us) return;
         const alias = us.alias;
         window.peerIds[alias] = us.peerId;
-        if (window.onGunUpdatePeerList) onGunUpdatePeerList();
+        // console.log(us.alias, us.peerId)
+        if (window.onGunUpdatePeerList) window.onGunUpdatePeerList();
     });
 
     gunRoot.get("not_accepting").map().on((us) => {
