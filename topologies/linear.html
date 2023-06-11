@@ -1,0 +1,63 @@
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script>
+    <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="/styles/activePeerList.css">
+    <title>P2P Viz | Linear Topology</title>
+
+    <style>
+        body {
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript" src="/scripts/gunManager.js"></script>
+    <script type="text/javascript" src="/scripts/loginManager.js"></script>
+    <script type="text/javascript" src="/scripts/peerHandler.js"></script>
+    <script type="text/javascript" src="/scripts/utils.js"></script>
+
+    <div class ="active-peer-list">
+        <h2>Active Peers</h2>
+    <div class="container">
+    	<ul class="scroller" id="peerList">
+		  
+    	</ul>
+    </div>
+    </div>
+        
+    <script>
+        async function main() {
+            gunInitiate();
+            await loginCheck();
+
+            gunMaintainActivePeerIdsList();
+            peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
+        }
+
+        main();
+
+        window.onGunUpdatePeerList = () => {
+            document.getElementById("peerList").innerHTML = ""
+
+            for(const alias in peerIds) {
+                document.getElementById("peerList").innerHTML += `<li class="activepeer"><b>${ alias }</b></li>`;
+            }
+            
+            let items = document.querySelectorAll('.activepeer');
+        	for (let i = 0; i < items.length; i++){
+	       	   items[i].style.background = randomColor();
+	        }
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>
