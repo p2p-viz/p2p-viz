@@ -1,89 +1,202 @@
 <html>
-
-<head>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script> -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
-    <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
-    <link rel="stylesheet" href="/styles/activePeerList.css">
-    <title>P2P Viz | Mesh Topology</title>
-
-    <style>
-        body {
-            padding: 0px;
-        }
-
-         pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
-        .string { color: green; }
-        .number { color: darkorange; }
-        .boolean { color: blue; }
-        .null { color: magenta; }
-        .key { color: red; }
-
-    </style>
-</head>
-
-<body>
-    <!-- <script type="text/javascript" src="/scripts/gunManager.js"></script> -->
-    <script type="text/javascript" src="/scripts/loginManager.js"></script>
-    <script type="text/javascript" src="/scripts/peerHandler.js"></script>
-    <script type="text/javascript" src="/scripts/utils.js"></script>
-    <script type="text/javascript" src="/scripts/topologies/mesh.js"></script>
-
-    <div class ="active-peer-list">
-        <h2>Active Peers</h2>
-    <div class="container">
-    	<ul class="scroller" id="peerList">
-		  
-    	</ul>
-    </div>
-    </div>
-
-    <div id="map"></div>
-        
-    <script>
-        async function main() {
-            // gunInitiate();
-            await loginCheck();
-    
-            peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
-            
-            window.onMeshPeerConnectionData = () => {
-                // console.log("gun peer list updated");
-                utilsUpdateActivePeersList("peerList");
-            }
-    
-            window.onPeerNewConnection = (conn) => {
-                meshOnPeerNewConnection(conn);
-            }
-            
-            window.onPeerReady = async (id) => {
-                meshInitiate();
-                const pids = await utilsGetPeers();
-                meshTryConnectToPeers(pids);
+    <head>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script> -->
+        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
+        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
+        <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+        <link rel="stylesheet" href="/styles/activePeerList.css">
+        <link rel="stylesheet" href="/styles/messageBox.css">
+        <title>P2P Viz | Mesh Topology</title>
+        <style>
+            body {
+                padding: 0px;
             }
 
-            window.onUpdateGlobalMap = () => {
-                let temp = `<pre> ${utilsSyntaxHighlight(JSON.stringify(window.mesh.globalMap, null, 4))}</pre>`;
-                for(let pid in window.peerIdsToAlias)
-                {
-                    temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
+            #map {
+                position: fixed;
+                left: 0px;
+                top: 0px;
+                width: 50%;
+            }
+
+            pre {
+                outline: 1px solid #ccc;
+                padding: 5px;
+                margin: 5px;
+            }
+
+            .string {
+                color: green;
+            }
+
+            .number {
+                color: darkorange;
+            }
+
+            .boolean {
+                color: blue;
+            }
+
+            .null {
+                color: magenta;
+            }
+
+            .key {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- <script type="text/javascript" src="/scripts/gunManager.js"></script> -->
+        <script type="text/javascript" src="/scripts/loginManager.js"></script>
+        <script type="text/javascript" src="/scripts/peerHandler.js"></script>
+        <script type="text/javascript" src="/scripts/utils.js"></script>
+        <script type="text/javascript" src="/scripts/topologies/mesh.js"></script>
+        <script type="text/javascript" src="/scripts/topologies/meshViz.js"></script>
+        <div class="active-peer-list">
+            <h2>Active Peers</h2>
+            <div class="container">
+                <ul class="scroller" id="peerList"></ul>
+            </div>
+        </div>
+        <div id="map"></div>
+        <div id="messagebox">
+            <div id="draggable">
+                <div id="draggable2">
+                    <div id="mC">
+                        <div id="mCH">
+                            <h2 id="selfusername">Username</h2>
+                            <!-- <a id="leaveRoom"> Leave Room</a> -->
+                            <!--       <button id="leaveRoom" type="button" onclick= "leaveRoom()">Leave Room</button> -->
+                        </div>
+                        <div id="message-container"></div>
+                        <div id="inputContainer">
+                        <form id="messageinput">
+                            <input type="text" id="message" placeholder="Enter message">
+                            <button type="submit" id="msubmit">Send</button>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            async function main() {
+                // gunInitiate();
+                await loginCheck();
+                document.getElementById("selfusername").innerText = window.userAlias;
+                peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
+                window.onMeshPeerConnectionData = (conn, data) => {
+                    // console.log("gun peer list updated");
+                    utilsUpdateActivePeersList("peerList");
+                    if (data["chatmessage"]) {
+                        console.log("new message " + data["chatmessage"] + " from " + window.peerIdsToAlias[conn.peer]);
+                        addChatMessage(data["chatmessage"], window.peerIdsToAlias[conn.peer]);
+                    }
                 }
-                document.getElementById("map").innerHTML = temp;
-                
+                window.onPeerNewConnection = (conn) => {
+                    meshOnPeerNewConnection(conn);
+                }
+                window.onPeerReady = async (id) => {
+                    meshInitiate();
+                    const pids = await utilsGetPeers();
+                    utilsUpdateActivePeersList("peerList");
+                    meshTryConnectToPeers(pids);
+                }
+                window.onUpdateGlobalMap = () => {
+                    // let temp = `
+                    // < pre > $ {
+                    //    utilsSyntaxHighlight(JSON.stringify(window.mesh.globalMap, null, 4))
+                    // } < /pre>`;
+                    // for(let pid in window.peerIdsToAlias)
+                    // {
+                    //     temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
+                    // }
+                    // document.getElementById("map").innerHTML = temp;
+                    document.getElementById("map").innerHTML = "";
+                    d3Draw();
+                }
+            }
+            main();
+
+            function sendMessage() {
+                const msg = document.getElementById("message").value;
+                document.getElementById("message").value = "";
+                let targetPeer = undefined;
+                if (msg.charAt(0) == "@") {
+                    const toPeer = msg.substring(1, msg.indexOf(" "));
+                    targetPeer = utilsGetByValue(window.peerIdsToAlias, toPeer);
+                }
+                meshBroadcastMessage({
+                    chatmessage: msg
+                }, targetPeer);
+                addChatMessage(msg, window.userAlias);
+            }
+            dragElement(document.getElementById(("draggable")));
+
+            document.getElementById("messageinput").addEventListener("submit", (e) => {
+                sendMessage();
+                e.preventDefault();
+            });
+
+            function addChatMessage(message, from)
+            {
+                document.getElementById("message-container").innerHTML += `
+					<div id= "messageOutput" style="background-color: ${utilsGenerateColorFromString(from)};">
+						<div id= "messageOCH">
+							<header>
+								<h4>${from}
+									<!--- <time>${new Date()}</time> --->
+								</h4>
+							</header>
+							<p>${message}</p>
+						</div>
+					</div>
+                `;
             }
 
-            
-            
-        }
+            function dragElement(elmnt) {
+                var pos1 = 0,
+                    pos2 = 0,
+                    pos3 = 0,
+                    pos4 = 0;
+                if (document.getElementById(elmnt.id + "header")) {
+                    /* if present, the header is where you move the DIV from:*/
+                    document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+                } else {
+                    /* otherwise, move the DIV from anywhere inside the DIV:*/
+                    elmnt.onmousedown = dragMouseDown;
+                }
 
-        main();
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    // get the mouse cursor position at startup:
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    // call a function whenever the cursor moves:
+                    document.onmousemove = elementDrag;
+                }
 
+                function elementDrag(e) {
+                    e = e || window.event;
+                    // calculate the new cursor position:
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    // set the element's new position:
+                    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                }
 
-
-    </script>
-
-
-</body>
-
+                function closeDragElement() {
+                    /* stop moving when mouse button is released:*/
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+        </script>
+    </body>
 </html>

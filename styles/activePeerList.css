@@ -4,11 +4,12 @@
     margin: 0px;
     right: 0px;
     top: 0px;
+    width: 20%;
 }
 
 .active-peer-list .container {
 	height: 100vh;
-    width: 200px;
+    width: 100%;
 	overflow-y: scroll;
 	/* border: 1px solid gray; */
     margin: 0px;

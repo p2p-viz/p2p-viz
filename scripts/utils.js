@@ -49,13 +49,15 @@ function utilsUpdateActivePeersList(containerName)
 {
     document.getElementById("peerList").innerHTML = ""
 
-        for(const pid in peerIdsToAlias) {
+        let tmpList = [];
+        for(const pid in window.peerIdsToAlias) {
             document.getElementById("peerList").innerHTML += `<li class="activepeer tooltip"><b>${ peerIdsToAlias[pid] }</b><button class="tooltiptext" onclick="copyTextToClipboard('${ pid }')">${ pid }</button></li>`;
+            tmpList.push(window.peerIdsToAlias[pid]);
         }
         
         let items = document.querySelectorAll('.activepeer');
         for (let i = 0; i < items.length; i++){
-	          items[i].style.background = randomColor();
+	          items[i].style.background = utilsGenerateColorFromString(tmpList[i]);
 	    }
 }
 
@@ -95,4 +97,33 @@ function utilsSyntaxHighlight(json) {
         }
         return '<span class="' + cls + '">' + match + '</span>';
     });
+}
+
+const cyrb53 = (str, seed = 0) => {
+	let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+	for(let i = 0, ch; i < str.length; i++) {
+		ch = str.charCodeAt(i);
+		h1 = Math.imul(h1 ^ ch, 2654435761);
+		h2 = Math.imul(h2 ^ ch, 1597334677);
+	}
+	h1  = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+	h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+	h2  = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+	
+	return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+};
+
+function utilsGenerateColorFromString(str) {
+  const hash = cyrb53(str);
+
+  // Generate RGB values from the hash
+  const r = (hash & 0xff0000) >> 16;
+  const g = (hash & 0x00ff00) >> 8;
+  const b = hash & 0x0000ff;
+
+  // Construct the color string in hexadecimal format
+  const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+
+  return color;
 }
