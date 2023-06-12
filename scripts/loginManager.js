@@ -15,14 +15,15 @@ async function loginCreateUser(username, password) {
 
 async function loginLogOutUser() {
     if(loginIsUserLoggedIn()) {
-        console.log("loggin out user");
+        console.log("logging out user");
         localStorage.removeItem("loginUsername");
         localStorage.removeItem("loginPassword");
     }
 }
 
 function loginRedirectToLoginPage() {
-    window.location.href = "login.html";
+    const query = "?source=" + encodeURI(window.location.href);
+    window.location.href = window.location.host==='p2p-viz.github.io' ? '/p2p-viz/login.html':'/login.html' + query;
 }
 
 async function loginCheck() {
