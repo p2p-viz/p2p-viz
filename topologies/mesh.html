@@ -6,7 +6,7 @@
         <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
         <script src="https://d3js.org/d3.v6.min.js"></script>
         <link rel="stylesheet" href="../styles/activePeerList.css">
-        <link rel="stylesheet" href="../styles/messageBox.css">
+        <link rel="stylesheet" href="../styles/chatbox.css">
         <title>P2P Viz | Mesh Topology</title>
         <style>
             body {
@@ -20,31 +20,6 @@
                 width: 50%;
             }
 
-            pre {
-                outline: 1px solid #ccc;
-                padding: 5px;
-                margin: 5px;
-            }
-
-            .string {
-                color: green;
-            }
-
-            .number {
-                color: darkorange;
-            }
-
-            .boolean {
-                color: blue;
-            }
-
-            .null {
-                color: magenta;
-            }
-
-            .key {
-                color: red;
-            }
         </style>
     </head>
     <body>
@@ -54,6 +29,7 @@
         <script type="text/javascript" src="../scripts/utils.js"></script>
         <script type="text/javascript" src="../scripts/topologies/mesh.js"></script>
         <script type="text/javascript" src="../scripts/topologies/meshViz.js"></script>
+        <script type="text/javascript" src="../scripts/chatboxManager.js"></script>
         <div class="active-peer-list">
             <h2>Active Peers</h2>
             <div class="container">
@@ -67,8 +43,6 @@
                     <div id="mC">
                         <div id="mCH">
                             <h2 id="selfusername">Username</h2>
-                            <!-- <a id="leaveRoom"> Leave Room</a> -->
-                            <!--       <button id="leaveRoom" type="button" onclick= "leaveRoom()">Leave Room</button> -->
                         </div>
                         <div id="message-container"></div>
                         <div id="inputContainer">
@@ -135,72 +109,13 @@
                 }, targetPeer);
                 addChatMessage(msg, window.userAlias);
             }
+            
             dragElement(document.getElementById(("draggable")));
-
+            
             document.getElementById("messageinput").addEventListener("submit", (e) => {
                 sendMessage();
                 e.preventDefault();
             });
-
-            function addChatMessage(message, from)
-            {
-                document.getElementById("message-container").innerHTML += `
-					<div id= "messageOutput" style="background-color: ${utilsGenerateColorFromString(from)};">
-						<div id= "messageOCH">
-							<header>
-								<h4>${from}
-									<!--- <time>${new Date()}</time> --->
-								</h4>
-							</header>
-							<p>${message}</p>
-						</div>
-					</div>
-                `;
-                let objDiv = document.getElementById("message-container");
-                objDiv.scrollTop = objDiv.scrollHeight;
-            }
-
-            function dragElement(elmnt) {
-                var pos1 = 0,
-                    pos2 = 0,
-                    pos3 = 0,
-                    pos4 = 0;
-                if (document.getElementById(elmnt.id + "header")) {
-                    /* if present, the header is where you move the DIV from:*/
-                    document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
-                } else {
-                    /* otherwise, move the DIV from anywhere inside the DIV:*/
-                    elmnt.onmousedown = dragMouseDown;
-                }
-
-                function dragMouseDown(e) {
-                    e = e || window.event;
-                    // get the mouse cursor position at startup:
-                    pos3 = e.clientX;
-                    pos4 = e.clientY;
-                    document.onmouseup = closeDragElement;
-                    // call a function whenever the cursor moves:
-                    document.onmousemove = elementDrag;
-                }
-
-                function elementDrag(e) {
-                    e = e || window.event;
-                    // calculate the new cursor position:
-                    pos1 = pos3 - e.clientX;
-                    pos2 = pos4 - e.clientY;
-                    pos3 = e.clientX;
-                    pos4 = e.clientY;
-                    // set the element's new position:
-                    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-                    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-                }
-
-                function closeDragElement() {
-                    /* stop moving when mouse button is released:*/
-                    document.onmouseup = null;
-                    document.onmousemove = null;
-                }
-            }
         </script>
     </body>
 </html>
