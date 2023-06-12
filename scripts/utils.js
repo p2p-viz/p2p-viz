@@ -70,11 +70,26 @@ function utilsGetByValue(map, searchValue)
 	return  undefined;
 }
 
-async function utilsGetPeers() {
-    
-    const res = await fetch("https://ice-server.karmakarmeghdip.repl.co/activePeers");
+async function utilsGetPeers(channel) {
+    const res = await fetch("https://ice-server.karmakarmeghdip.repl.co/activePeers?channel=" + encodeURI(channel));
     const jsondata = await res.json();
     return jsondata;
+}
+
+async function utilsResgister(pid, channel) {
+    const res = await fetch('https://ice-server.karmakarmeghdip.repl.co/registerPeer', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({pid, channel})
+    });
+    if(res.status != 200) {
+        console.error("Failed to register peer id");
+        return false;
+    }
+    return true;
 }
 
 function utilsSyntaxHighlight(json) {
@@ -100,6 +115,7 @@ function utilsSyntaxHighlight(json) {
 }
 
 const cyrb53 = (str, seed = 0) => {
+    if(!str) str = "";
 	let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
 	for(let i = 0, ch; i < str.length; i++) {
 		ch = str.charCodeAt(i);

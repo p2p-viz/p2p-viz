@@ -37,7 +37,7 @@ function meshPeerConnectionPrepare(conn, isAccepted)
 {
     if(isAccepted)
     {
-        mesh.activeConnections.push(conn);
+        window.mesh.activeConnections.push(conn);
         console.log("accepted connection established with : " + conn.peer);
     }
     else
@@ -91,10 +91,6 @@ function meshTryConnectToPeers(pids) {
             meshTryConnectToPeer(pids[i]);
         }
     }
-}
-
-function meshOnNewPeersAdded() {
-    meshBroadcastSelfPeers();
 }
 
 function meshBroadcastMessage(message, targetPeer = undefined)

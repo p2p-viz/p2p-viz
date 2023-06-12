@@ -27,8 +27,8 @@
         <script type="text/javascript" src="../scripts/loginManager.js"></script>
         <script type="text/javascript" src="../scripts/peerHandler.js"></script>
         <script type="text/javascript" src="../scripts/utils.js"></script>
-        <script type="text/javascript" src="../scripts/topologies/mesh.js"></script>
-        <script type="text/javascript" src="../scripts/topologies/meshViz.js"></script>
+        <script type="text/javascript" src="../scripts/topologies/gossip.js"></script>
+        <script type="text/javascript" src="../scripts/topologies/gossipViz.js"></script>
         <script type="text/javascript" src="../scripts/chatboxManager.js"></script>
         <div class="active-peer-list">
             <h2>Active Peers</h2>
@@ -61,8 +61,7 @@
                 await loginCheck();
                 document.getElementById("selfusername").innerText = window.userAlias;
                 peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
-                window.onMeshPeerConnectionData = (conn, data) => {
-                    // console.log("gun peer list updated");
+                window.onGossipPeerConnectionData = (conn, data) => {
                     utilsUpdateActivePeersList("peerList");
                     if (data["chatmessage"]) {
                         console.log("new message " + data["chatmessage"] + " from " + window.peerIdsToAlias[conn.peer]);
@@ -70,15 +69,16 @@
                     }
                 }
                 window.onPeerNewConnection = (conn) => {
-                    meshOnPeerNewConnection(conn);
+                    gossipOnPeerNewConnection(conn);
                 }
                 window.onPeerReady = async (id) => {
-                    meshInitiate();
-                    const pids = await utilsGetPeers();
+                    await utilsResgister(window.peerId, "gossip");
+                    gossipInitiate();
+                    const pids = await utilsGetPeers("gossip");
                     utilsUpdateActivePeersList("peerList");
                     document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeMesh());
-                    meshTryConnectToPeers(pids);
+                    document.getElementById("map").appendChild(d3VisualizeGossip());
+                    gossipTryConnectToPeers(pids);
                 }
                 window.onUpdateGlobalMap = () => {
                     // let temp = `
@@ -91,7 +91,7 @@
                     // }
                     // document.getElementById("map").innerHTML = temp;
                     document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeMesh());
+                    document.getElementById("map").appendChild(d3VisualizeGossip());
                 }
             }
             main();
@@ -104,7 +104,7 @@
                     const toPeer = msg.substring(1, msg.indexOf(" "));
                     targetPeer = utilsGetByValue(window.peerIdsToAlias, toPeer);
                 }
-                meshBroadcastMessage({
+                gossipBroadcastMessage({
                     chatmessage: msg
                 }, targetPeer);
                 addChatMessage(msg, window.userAlias);

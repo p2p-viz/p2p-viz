@@ -11,7 +11,6 @@ function onPeerClose() {
 }
 
 function onPeerConnection(conn) {
-    
     if(window.onPeerNewConnection) window.onPeerNewConnection(conn);
 }
 
@@ -29,6 +28,7 @@ function peerCreate(iceServerHost, iceServerPort, iceServerPath) {
     peer.on("close", onPeerClose);
     
     window.addEventListener("beforeunload", (e) => {
+        if(window.onPeerAboutToClose) window.onPeerAboutToClose();
         window.peer.destroy();
         (e || window.event).returnValue = null;
         return null;

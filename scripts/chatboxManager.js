@@ -4,7 +4,7 @@ function addChatMessage(message, from) {
 						<div id= "messageOCH">
 							<header>
 								<h4>${from}
-									<!--- <time>${new Date()}</time> --->
+									<time style="font-size: 12px;">${(new Date()).toLocaleString()}</time>
 								</h4>
 							</header>
 							<p>${message}</p>
