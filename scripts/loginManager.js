@@ -22,7 +22,7 @@ async function loginLogOutUser() {
 }
 
 function loginRedirectToLoginPage() {
-    window.location.href = "/login.html";
+    window.location.href = "login.html";
 }
 
 async function loginCheck() {
