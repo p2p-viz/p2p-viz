@@ -4,6 +4,7 @@
         <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
         <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
         <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
+        <script src="https://unpkg.com/underscore@1.13.6/underscore-umd-min.js"></script>
         <script src="https://d3js.org/d3.v6.min.js"></script>
         <link rel="stylesheet" href="../styles/activePeerList.css">
         <link rel="stylesheet" href="../styles/chatbox.css">
@@ -71,27 +72,33 @@
                 window.onPeerNewConnection = (conn) => {
                     gossipOnPeerNewConnection(conn);
                 }
+                window.registerPeerForConenctions = async () => {
+                    await await utilsResgisterPeer(window.peerId, "gossip", true);
+                }
+                window.deregisterPeerForConenctions = async () => {
+                    await await utilsResgisterPeer(window.peerId, "gossip", false);
+                }
+                window.getActivePeerList = async () => {
+                    return await utilsGetPeers("gossip", "raw");
+                }
                 window.onPeerReady = async (id) => {
-                    await utilsResgister(window.peerId, "gossip");
+                    await utilsResgisterPeer(window.peerId, "gossip", true);
                     gossipInitiate();
-                    const pids = await utilsGetPeers("gossip");
+                    const pids = await utilsGetPeers("gossip", "raw");
                     utilsUpdateActivePeersList("peerList");
                     document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeGossip());
+                    //document.getElementById("map").appendChild(d3VisualizeGossip());
                     gossipTryConnectToPeers(pids);
                 }
                 window.onUpdateGlobalMap = () => {
-                    // let temp = `
-                    // < pre > $ {
-                    //    utilsSyntaxHighlight(JSON.stringify(window.mesh.globalMap, null, 4))
-                    // } < /pre>`;
-                    // for(let pid in window.peerIdsToAlias)
-                    // {
-                    //     temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
-                    // }
-                    // document.getElementById("map").innerHTML = temp;
-                    document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeGossip());
+                    let temp = `<pre>${utilsSyntaxHighlight(JSON.stringify(window.gossip.globalMap, null, 4))}</pre>`;
+                    for(let pid in window.peerIdsToAlias)
+                    {
+                        temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
+                    }
+                    document.getElementById("map").innerHTML = temp;
+                    //document.getElementById("map").innerHTML = "";
+                    //document.getElementById("map").appendChild(d3VisualizeGossip());
                 }
             }
             main();

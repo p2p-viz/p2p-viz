@@ -70,20 +70,27 @@ function utilsGetByValue(map, searchValue)
 	return  undefined;
 }
 
-async function utilsGetPeers(channel) {
+async function utilsGetPeers(channel, format = "list") {
     const res = await fetch("https://ice-server.karmakarmeghdip.repl.co/activePeers?channel=" + encodeURI(channel));
     const jsondata = await res.json();
+    if(format && format == "list") {
+        let result = [];
+        for (const item in jsondata) {
+            result.push(item);
+        }
+        return result;
+    }
     return jsondata;
 }
 
-async function utilsResgister(pid, channel) {
+async function utilsResgisterPeer(pid, channel, userData = undefined) {
     const res = await fetch('https://ice-server.karmakarmeghdip.repl.co/registerPeer', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({pid, channel})
+        body: JSON.stringify({pid, channel, userData})
     });
     if(res.status != 200) {
         console.error("Failed to register peer id");

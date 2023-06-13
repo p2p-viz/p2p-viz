@@ -74,7 +74,7 @@
                     meshOnPeerNewConnection(conn);
                 }
                 window.onPeerReady = async (id) => {
-                    await utilsResgister(window.peerId, "mesh");
+                    await utilsResgisterPeer(window.peerId, "mesh");
                     meshInitiate();
                     const pids = await utilsGetPeers("mesh");
                     utilsUpdateActivePeersList("peerList");

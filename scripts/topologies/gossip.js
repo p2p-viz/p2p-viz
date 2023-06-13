@@ -34,15 +34,19 @@ async function gossipPeerCloseConnection(conn)
     gossipBroadcastSelfPeers();
     if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();
 
-    if(window.gossip.activeConnections.length <= window.gossip.maxConnections - 2) {
-        // register back to list and try connect to others
+    if(window.gossip.activeConnections.length < window.gossip.maxConnections) {
+        if(window.registerPeerForConenctions) await window.registerPeerForConenctions();
     }
-    else if(window.gossip.activeConnections.length <= window.gossip.maxConnections - 1) {
-        // register back to list
+    
+    if(window.gossip.activeConnections.length == 0) {
+        let activePeerList = {};
+        if(window.getActivePeerList) activePeerList = await window.getActivePeerList();
+        gossipTryConnectToPeers(activePeerList);
     }
+    
 }
 
-function gossipPeerConnectionPrepare(conn, isAccepted)
+async function gossipPeerConnectionPrepare(conn, isAccepted)
 {
     if(isAccepted)
     {
@@ -60,32 +64,32 @@ function gossipPeerConnectionPrepare(conn, isAccepted)
         console.log("sent connection established with : " + conn.peer);
     }
 
-
     conn.on("close", () => { gossipPeerCloseConnection(conn) });
     conn.on("data", (data) => {
         if(data && data["payload"] && data["payload"]["peerList"]) {
-            console.log(`updated peer list from :  ${data["payload"]["source"]}`)
+            console.log(`updated peer list from :  ${data["source"]}`)
             window.gossip.globalMap[data["source"]] = data["payload"]["peerList"];
             if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();
+        }
+        else if(data && data["payload"] && data["payload"]["globalMap"]) {
+            console.log("updating global map from " + data["source"]);
+            const pidmp = data["payload"]["globalMap"];
+            for(const item in pidmp) {
+                window.gossip.globalMap[item] = pidmp[item];
+            }
+            const pidal = data["payload"]["pidToAlias"];
+            for(const item in pidal) {
+                window.peerIdsToAlias[item] = pidal[item];
+            }
         }
         else if(data && data["payload"] && data["payload"]["alias"]) {
             console.log("updated alias from : " + data["source"] + " to " + data["payload"]["alias"]);
             window.peerIdsToAlias[data["source"]] = data["payload"]["alias"];
-            // this means a new user registered on chain
-            gossipBroadcastSelfPeers();
         }
 
         const hash = cyrb53(JSON.stringify(data));
-        if (window.gossip.forwardedMessages[hash] == undefined) {
-            for (let i = 0; i < window.gossip.activeConnections.length ; i++) {
-                if(window.gossip.activeConnections[i].peer != conn.peer) {
-                    window.gossip.activeConnections[i].send(data);
-                }
-            }            
-        }
-        window.gossip.forwardedMessages[hash] = new Date();
         
-        if(window.onGossipPeerConnectionData)
+        if(window.onGossipPeerConnectionData && window.gossip.forwardedMessages[hash] == undefined)
         {
             if(data["target"] == undefined || data["target"] == window.peerId)
             {
@@ -94,13 +98,33 @@ function gossipPeerConnectionPrepare(conn, isAccepted)
             }
         }
 
+        if(data["target"] !== window.peerID) {
+            if (window.gossip.forwardedMessages[hash] == undefined) {
+                for (let i = 0; i < window.gossip.activeConnections.length ; i++) {
+                    if(window.gossip.activeConnections[i].peer != conn.peer) {
+                        window.gossip.activeConnections[i].send(data);
+                    }
+                }            
+            }
+            window.gossip.forwardedMessages[hash] = new Date();
+        }
+        
+
     }); 
 
+    conn.send({
+        source: window.peerId,
+        target: conn.peer,
+        payload: {
+            globalMap: window.gossip.globalMap,
+            pidToAlias: window.peerIdsToAlias
+        }
+    });
     gossipBroadcastMessage({ alias: window.userAlias });
     gossipBroadcastSelfPeers();
 
     if(window.gossip.activeConnections.length > window.gossip.maxConnections) {
-        // derigister from list
+        if(window.deregisterPeerForConenctions) await window.deregisterPeerForConenctions();
     }
 }
 
@@ -120,10 +144,15 @@ function gossipOnPeerNewConnection(conn) {
 }
 
 function gossipTryConnectToPeers(pids) {
-    for (let i = 0 ; i < pids.length ; i++) {
-        if(!gossipIsConnectedTo(pids[i])) {
-            gossipTryConnectToPeer(pids[i]);
+    let possibleConnections = [];
+    for (const pid in pids) {
+        if(!gossipIsConnectedTo(pid) && pids[pid] && pids[pid] == true) {
+            possibleConnections.push(pid);
         }
+    }
+    const targetConnections = _.sample(possibleConnections, Math.max(window.gossip.maxConnections - 1, 1));
+    for(let i = 0; i < targetConnections.length ; i++) {
+        gossipTryConnectToPeer(targetConnections[i]);
     }
 }
 
