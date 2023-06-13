@@ -91,14 +91,14 @@
                     gossipTryConnectToPeers(pids);
                 }
                 window.onUpdateGlobalMap = () => {
-                    // let temp = `<pre>${utilsSyntaxHighlight(JSON.stringify(window.gossip.globalMap, null, 4))}</pre>`;
-                    // for(let pid in window.peerIdsToAlias)
-                    // {
-                    //     temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
-                    // }
-                    // document.getElementById("map").innerHTML = temp;
-                    document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeGossip());
+                    let temp = `<pre>${utilsSyntaxHighlight(JSON.stringify(window.gossip.globalMap, null, 4))}</pre>`;
+                    for(let pid in window.peerIdsToAlias)
+                    {
+                        temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
+                    }
+                    document.getElementById("map").innerHTML = temp;
+                    // document.getElementById("map").innerHTML = "";
+                    // document.getElementById("map").appendChild(d3VisualizeGossip());
                 }
             }
             main();

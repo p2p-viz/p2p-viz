@@ -2,6 +2,7 @@ function linearInitiate() {
     window.linear = {
         activeConnections: [],
         // peerChain: []
+        globalMap: {}
     };
 
     window.peerIdsToAlias = {};
@@ -100,10 +101,10 @@ function linearOnNewPeersAdded() {
     linearBroadcastSelfPeers();
 }
 
-function linearBroadcastMessage(message)
-{
+function linearBroadcastMessage(message) {
+    console.log("Broadcasting..."); console.log(message);
     for (const pr of window.linear.activeConnections) {
-        
+        linear.activeConnections[1].send({ next: linear.activeConnections[0].peer });
         pr.send(message);
         
     }
@@ -113,4 +114,13 @@ function linearBroadcastSelfPeers()
 {
     window.linear.globalMap[window.peerId] = linearCreateSelfPeersAliasList();
     linearBroadcastMessage({peerList: window.linear.globalMap[window.peerId]});
+}
+
+function linearShutDown() {
+    console.log("Shutting Down...");
+    try {
+        linear.activeConnections[1].send({ next: linear.activeConnections[0].peer });
+    } catch(err) {
+        console.error(err);
+    }
 }

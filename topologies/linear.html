@@ -7,7 +7,7 @@
         <script src="https://d3js.org/d3.v6.min.js"></script>
         <link rel="stylesheet" href="../styles/activePeerList.css">
         <link rel="stylesheet" href="../styles/chatbox.css">
-        <title>P2P Viz | Mesh Topology</title>
+        <title>P2P Viz | Linear Topology</title>
         <style>
             body {
                 padding: 0px;
@@ -28,7 +28,6 @@
         <script type="text/javascript" src="../scripts/peerHandler.js"></script>
         <script type="text/javascript" src="../scripts/utils.js"></script>
         <script type="text/javascript" src="../scripts/topologies/linear.js"></script>
-        <!-- <script type="text/javascript" src="../scripts/topologies/meshViz.js"></script> -->
         <script type="text/javascript" src="../scripts/chatboxManager.js"></script>
         <div class="active-peer-list">
             <h2>Active Peers</h2>
@@ -70,15 +69,15 @@
                     }
                 }
                 window.onPeerNewConnection = (conn) => {
-                    meshOnPeerNewConnection(conn);
+                    linearOnPeerNewConnection(conn);
                 }
                 window.onPeerReady = async (id) => {
-                    meshInitiate();
+                    linearInitiate();
                     const pids = await utilsGetPeers();
                     utilsUpdateActivePeersList("peerList");
                     document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeMesh());
-                    meshTryConnectToPeers(pids);
+                    // document.getElementById("map").appendChild(d3VisualizeMesh());
+                    linearTryConnectToPeers(pids);
                 }
                 window.onUpdateGlobalMap = () => {
                     // let temp = `
@@ -91,7 +90,7 @@
                     // }
                     // document.getElementById("map").innerHTML = temp;
                     document.getElementById("map").innerHTML = "";
-                    document.getElementById("map").appendChild(d3VisualizeMesh());
+                    // document.getElementById("map").appendChild(d3VisualizeMesh());
                 }
             }
             main();
@@ -104,7 +103,7 @@
                     const toPeer = msg.substring(1, msg.indexOf(" "));
                     targetPeer = utilsGetByValue(window.peerIdsToAlias, toPeer);
                 }
-                meshBroadcastMessage({
+                linearBroadcastMessage({
                     chatmessage: msg
                 }, targetPeer);
                 addChatMessage(msg, window.userAlias);
