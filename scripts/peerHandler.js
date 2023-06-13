@@ -8,6 +8,7 @@ function onPeerOpen(id) {
 function onPeerClose() {
     //gunRemovePeerId(window.peerId);
     delete window.peerId;
+    if(window.onPeerDisconnectedOrClosed) window.onPeerDisconnectedOrClosed();
 }
 
 function onPeerConnection(conn) {

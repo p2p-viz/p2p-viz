@@ -1,120 +1,123 @@
 <html>
-    <head>
-        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script> -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
-        <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
-        <script src="https://d3js.org/d3.v6.min.js"></script>
-        <link rel="stylesheet" href="../styles/activePeerList.css">
-        <link rel="stylesheet" href="../styles/chatbox.css">
-        <title>P2P Viz | Linear Topology</title>
-        <style>
-            body {
-                padding: 0px;
-            }
 
-            #map {
-                position: fixed;
-                left: 0px;
-                top: 0px;
-                width: 50%;
-            }
+<head>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
+    <script src="https://unpkg.com/peerjs@latest/dist/peerjs.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <link rel="stylesheet" href="../styles/activePeerList.css">
+    <link rel="stylesheet" href="../styles/chatbox.css">
+    <title>P2P Viz | Linear Topology</title>
+    <style>
+        body {
+            padding: 0px;
+        }
 
-        </style>
-    </head>
-    <body>
-        <!-- <script type="text/javascript" src="/scripts/gunManager.js"></script> -->
-        <script type="text/javascript" src="../scripts/loginManager.js"></script>
-        <script type="text/javascript" src="../scripts/peerHandler.js"></script>
-        <script type="text/javascript" src="../scripts/utils.js"></script>
-        <script type="text/javascript" src="../scripts/topologies/linear.js"></script>
-        <script type="text/javascript" src="../scripts/chatboxManager.js"></script>
-        <div class="active-peer-list">
-            <h2>Active Peers</h2>
-            <div class="container">
-                <ul class="scroller" id="peerList"></ul>
-            </div>
+        #map {
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <script type="text/javascript" src="/scripts/gunManager.js"></script> -->
+    <script type="text/javascript" src="../scripts/loginManager.js"></script>
+    <script type="text/javascript" src="../scripts/peerHandler.js"></script>
+    <script type="text/javascript" src="../scripts/utils.js"></script>
+    <script type="text/javascript" src="../scripts/topologies/linear.js"></script>
+    <script type="text/javascript" src="../scripts/chatboxManager.js"></script>
+    <div class="active-peer-list">
+        <h2>Active Peers</h2>
+        <div class="container">
+            <ul class="scroller" id="peerList"></ul>
         </div>
-        <div id="map"></div>
-        <div id="messagebox">
-            <div id="draggable">
-                <div id="draggable2">
-                    <div id="mC">
-                        <div id="mCH">
-                            <h2 id="selfusername">Username</h2>
-                        </div>
-                        <div id="message-container"></div>
-                        <div id="inputContainer">
+    </div>
+    <div id="map"></div>
+    <div id="messagebox">
+        <div id="draggable">
+            <div id="draggable2">
+                <div id="mC">
+                    <div id="mCH">
+                        <h2 id="selfusername">Username</h2>
+                    </div>
+                    <div id="message-container"></div>
+                    <div id="inputContainer">
                         <form id="messageinput">
                             <input type="text" id="message" placeholder="Enter message">
                             <button type="submit" id="msubmit">Send</button>
                         </form>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <script>
-            async function main() {
-                // gunInitiate();
-                await loginCheck();
-                document.getElementById("selfusername").innerText = window.userAlias;
-                peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
-                window.onMeshPeerConnectionData = (conn, data) => {
-                    // console.log("gun peer list updated");
-                    utilsUpdateActivePeersList("peerList");
-                    if (data["chatmessage"]) {
-                        console.log("new message " + data["chatmessage"] + " from " + window.peerIdsToAlias[conn.peer]);
-                        addChatMessage(data["chatmessage"], window.peerIdsToAlias[conn.peer]);
-                    }
-                }
-                window.onPeerNewConnection = (conn) => {
-                    linearOnPeerNewConnection(conn);
-                }
-                window.onPeerReady = async (id) => {
-                    linearInitiate();
-                    const pids = await utilsGetPeers();
-                    utilsUpdateActivePeersList("peerList");
-                    document.getElementById("map").innerHTML = "";
-                    // document.getElementById("map").appendChild(d3VisualizeMesh());
-                    linearTryConnectToPeers(pids);
-                }
-                window.onUpdateGlobalMap = () => {
-                    // let temp = `
-                    // < pre > $ {
-                    //    utilsSyntaxHighlight(JSON.stringify(window.mesh.globalMap, null, 4))
-                    // } < /pre>`;
-                    // for(let pid in window.peerIdsToAlias)
-                    // {
-                    //     temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
-                    // }
-                    // document.getElementById("map").innerHTML = temp;
-                    document.getElementById("map").innerHTML = "";
-                    // document.getElementById("map").appendChild(d3VisualizeMesh());
+    </div>
+    <script>
+        async function main() {
+            // gunInitiate();
+            await loginCheck();
+            document.getElementById("selfusername").innerText = window.userAlias;
+            peerCreate("ice-server.karmakarmeghdip.repl.co", 443, "/peerjs/hightides");
+            window.onLinearPeerConnectionData = (conn, data) => {
+                // console.log("gun peer list updated");
+                utilsUpdateActivePeersList("peerList");
+                if (data["chatmessage"]) {
+                    console.log("new message " + data["chatmessage"] + " from " + window.peerIdsToAlias[conn.peer]);
+                    addChatMessage(data["chatmessage"], window.peerIdsToAlias[conn.peer]);
                 }
             }
-            main();
+            window.onPeerNewConnection = (conn) => {
+                linearOnPeerNewConnection(conn);
+            }
+            window.onPeerReady = async (id) => {
+                await utilsResgisterPeer(window.peerId, "linear")
+                linearInitiate();
+                const pids = await utilsGetPeers("linear");
+                utilsUpdateActivePeersList("peerList");
+                document.getElementById("map").innerHTML = "";
+                // document.getElementById("map").appendChild(d3VisualizeMesh());
+                linearTryConnectToPeers(pids);
+            }
+            window.onUpdateGlobalMap = () => {
+                // let temp = `
+                // < pre > $ {
+                //    utilsSyntaxHighlight(JSON.stringify(window.mesh.globalMap, null, 4))
+                // } < /pre>`;
+                // for(let pid in window.peerIdsToAlias)
+                // {
+                //     temp = temp.replaceAll(pid, window.peerIdsToAlias[pid]);
+                // }
+                // document.getElementById("map").innerHTML = temp;
+                document.getElementById("map").innerHTML = "";
+                // document.getElementById("map").appendChild(d3VisualizeMesh());
+            }
+        }
+        main();
 
-            function sendMessage() {
-                const msg = document.getElementById("message").value;
-                document.getElementById("message").value = "";
-                let targetPeer = undefined;
-                if (msg.charAt(0) == "@") {
-                    const toPeer = msg.substring(1, msg.indexOf(" "));
-                    targetPeer = utilsGetByValue(window.peerIdsToAlias, toPeer);
-                }
-                linearBroadcastMessage({
-                    chatmessage: msg
-                }, targetPeer);
-                addChatMessage(msg, window.userAlias);
+        function sendMessage() {
+            const msg = document.getElementById("message").value;
+            document.getElementById("message").value = "";
+            let targetPeer = undefined;
+            if (msg.charAt(0) == "@") {
+                const toPeer = msg.substring(1, msg.indexOf(" "));
+                targetPeer = utilsGetByValue(window.peerIdsToAlias, toPeer);
             }
-            
-            dragElement(document.getElementById(("draggable")));
-            
-            document.getElementById("messageinput").addEventListener("submit", (e) => {
-                sendMessage();
-                e.preventDefault();
-            });
-        </script>
-    </body>
+            linearBroadcastMessage({
+                chatmessage: msg
+            }, targetPeer);
+            addChatMessage(msg, window.userAlias);
+        }
+
+        dragElement(document.getElementById(("draggable")));
+
+        document.getElementById("messageinput").addEventListener("submit", (e) => {
+            sendMessage();
+            e.preventDefault();
+        });
+    </script>
+</body>
+
 </html>

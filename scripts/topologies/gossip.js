@@ -50,16 +50,15 @@ async function gossipPeerCloseConnection(conn)
 
 async function gossipPeerConnectionPrepare(conn, isAccepted)
 {
+    if(gossipIsConnectedTo(conn.peer)) {
+        console.log("cancelling redundant connection to : " + conn.peer);
+        return;
+    }
+    window.gossip.activeConnections.push(conn);
     if(isAccepted) {
-        window.gossip.activeConnections.push(conn);
         console.log("accepted connection established with : " + conn.peer);
     }
     else {
-        if(gossipIsConnectedTo(conn.peer)) {
-            console.log("cancelling redundant connection to : " + conn.peer);
-            return;
-        }
-        window.gossip.activeConnections.push(conn);
         console.log("sent connection established with : " + conn.peer);
         gossipBroadcastMessage({ newJoinee: window.userAlias });        
     }
@@ -71,22 +70,31 @@ async function gossipPeerConnectionPrepare(conn, isAccepted)
         }
         else if(data && data.payload && data.payload.quiterId) {
             if(window.peerIdsToAlias[data.payload.quiterId]) {
+                console.log(window.peerIdsToAlias[data.payload.quiterId] + " quit the network");
                 delete window.peerIdsToAlias[data.payload.quiterId];
+                delete window.gossip.globalMap[data.payload.quiterId];
+                gossipBroadcastSelfPeers();
+                try { if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();} catch(err) {}
             }
         }
         else if(data && data.payload && data.payload.newJoinee) {
             window.peerIdsToAlias[data.source] = data.payload.newJoinee;
-            gossipBroadcastMessage({ alias: window.userAlias }, data.source);
+            gossipBroadcastMessage({ alias: window.userAlias });
+            gossipBroadcastSelfPeers();
+            try { if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();} catch(err) {}
         }
+        else if(data && data.payload && data.payload.peerList) {
+            window.gossip.globalMap[data.source] = data.payload.peerList;
+            try { if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();} catch(err) {}
+        }
+        
         
         const hash = cyrb53(JSON.stringify(data));
         
-        if(window.onGossipPeerConnectionData && !window.gossip.forwardedMessages[hash])
-        {
-            if(!data.target || data.target === window.peerId)
-            {
+        if(window.onGossipPeerConnectionData && !window.gossip.forwardedMessages[hash]) {
+            if(!data.target || data.target === window.peerId) {
                 let conn2 = {peer: data.source};
-                window.onGossipPeerConnectionData(conn2, data.payload);
+                try { window.onGossipPeerConnectionData(conn2, data.payload); } catch(err) {}
             }
         }
 
@@ -104,7 +112,8 @@ async function gossipPeerConnectionPrepare(conn, isAccepted)
 
     }); 
 
-    // gossipBroadcastMessage({ alias: window.userAlias });
+    gossipBroadcastMessage({ alias: window.userAlias });
+    gossipBroadcastSelfPeers();
     
     if(window.gossip.activeConnections.length > window.gossip.maxConnections) {
         if(window.deregisterPeerForConenctions) await window.deregisterPeerForConenctions();
@@ -121,11 +130,6 @@ function gossipTryConnectToPeer(pid) {
 
 function gossipOnPeerNewConnection(conn) {
     console.log("recieved connection request from : " + conn.peer);
-    if(gossipIsConnectedTo(conn.peer)) 
-    {
-        conn.close();
-        return;
-    }
     conn.on("open", () => {
         gossipPeerConnectionPrepare(conn, true);
     });
@@ -158,8 +162,7 @@ function gossipBroadcastMessage(message, targetPeer = undefined)
     }
 }
 
-function gossipBroadcastSelfPeers()
-{
+function gossipBroadcastSelfPeers() {
     window.gossip.globalMap[window.peerId] = gossipCreateSelfPeersAliasList();
     gossipBroadcastMessage({peerList: window.gossip.globalMap[window.peerId]});
 }
