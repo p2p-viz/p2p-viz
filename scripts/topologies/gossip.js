@@ -34,6 +34,8 @@ async function gossipPeerCloseConnection(conn)
     gossipBroadcastSelfPeers();
     if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();
 
+    gossipBroadcastMessage({ quiterId: conn.peer });
+
     if(window.gossip.activeConnections.length < window.gossip.maxConnections) {
         if(window.registerPeerForConenctions) await window.registerPeerForConenctions();
     }
@@ -43,7 +45,7 @@ async function gossipPeerCloseConnection(conn)
         if(window.getActivePeerList) activePeerList = await window.getActivePeerList();
         gossipTryConnectToPeers(activePeerList);
     }
-    
+
 }
 
 async function gossipPeerConnectionPrepare(conn, isAccepted)
@@ -70,6 +72,13 @@ async function gossipPeerConnectionPrepare(conn, isAccepted)
             console.log(`updated peer list from :  ${data["source"]}`)
             window.gossip.globalMap[data["source"]] = data["payload"]["peerList"];
             if(window.onUpdateGlobalMap) window.onUpdateGlobalMap();
+        }
+        if(data && data["payload"] && data["payload"]["quiterId"]) {
+            if(window.gossip[data["payload"]["quiterId"]])
+            {
+                delete window.gossip[data["payload"]["quiterId"]];
+                delete window.peerIdsToAlias[data["payload"]["quiterId"]];
+            }
         }
         else if(data && data["payload"] && data["payload"]["globalMap"]) {
             console.log("updating global map from " + data["source"]);

@@ -9,8 +9,8 @@ function d3VisualizeGossip() {
     for (let key in data) {
         // Add current node
         nodes.push({
-            // id: window.peerIdsToAlias[key]
-            id: key
+            id: window.peerIdsToAlias[key]
+            // id: key
         });
 
         // Add links from the current node to its connected nodes
@@ -19,10 +19,10 @@ function d3VisualizeGossip() {
         for (let connectedNode of connectedNodes) {
             if (window.peerIdsToAlias[connectedNode]) {
                 links.push({
-                    // source: window.peerIdsToAlias[key],
-                    // target: window.peerIdsToAlias[connectedNode]
-                    source: key,
-                    target: connectedNode
+                    source: window.peerIdsToAlias[key],
+                    target: window.peerIdsToAlias[connectedNode]
+                    // source: key,
+                    // target: connectedNode
                 });
             }
         }
