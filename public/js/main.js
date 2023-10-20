@@ -6,7 +6,7 @@ network.connect({
     host: "p2pnet.jaysmito.repl.co",
     port: 443,
     path: "/peerjs/ice"
-}, "https://p2pnet.jaysmito.repl.co/channels/main")
+}, "https://p2pnet.jaysmito.repl.co/channels/main", "mesh")
 
 network.on("connect", (peer_id) => {
     console.log("Connected to network with id: " + peer_id)

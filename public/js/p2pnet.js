@@ -1,4 +1,3 @@
-
 function dispatchContextEvent(context, event, ...args) {
     const eventCallbacks = context.__on_callbacks[event];
     if (eventCallbacks) {
@@ -8,9 +7,68 @@ function dispatchContextEvent(context, event, ...args) {
     }
 }
 
+async function registerPeerToChannel(context) {
+    const url = `https://p2pnet.jaysmito.repl.co/channels/main?peer_id=${context.__peer_id}&operation=deregister`
+    const res = await fetch(url);
+    return await res.json();
+})
+    
+
+async function deregisterPeerFromChannel(context) {
+    const url = `https://p2pnet.jaysmito.repl.co/channels/main?peer_id=${context.__peer_id}&operation=deregister`
+    const res = await fetch(url);
+    return await res.json();
+}
+
+function gossipNetworkManager(context)
+{
+    let manager = {};
+
+    manager.onPeerConnect = (id) => {
+
+    };
+
+    manager.onPeerError = (err) => {
+
+    };
+
+    manager.onPeerConnection = (conn) => {
+
+    };
+
+    manager.onPeerClose = () => {
+
+    };
+
+    
+    return manager;
+}
+
+function meshNetworkManager(context) {
+    let manager = {};
+
+
+    manager.onPeerConnect = (id) => {
+        registPeerToChannel(context);
+    };
+
+    manager.onPeerError = (err) => {
+
+    };
+
+    manager.onPeerConnection = (conn) => {
+        
+    };
+
+    manager.onPeerClose = () => {
+        deregisterPeerFromChannel(context);
+    };
+
+    return manager;
+}
 
 function setupAutoPeerDestroy(context) {
-    if(window && window.addEventListener && context.__peer) {
+    if (window && window.addEventListener && context.__peer) {
         window.addEventListener("beforeunload", (e) => {
             dispatchContextEvent(context, "pre_disconnect");
             context.__peer.destroy();
@@ -23,7 +81,7 @@ function setupAutoPeerDestroy(context) {
 
 function connectToIntermediateServer(context) {
 
-    const ice_server = context.ice_server;
+    const ice_server = context.__ice_server;
 
     if (!ice_server || !ice_server.host || !ice_server.port || !ice_server.path) {
         dispatchContextEvent(context, "error", "Invalid ICE server settings");
@@ -37,29 +95,34 @@ function connectToIntermediateServer(context) {
         path: ice_server.path
     });
 
-    setupAutoPeerDestroy(context);  
+    setupAutoPeerDestroy(context);
 
     context.__peer.on("open", (id) => {
         context.__peer_id = id;
+        context.__network_manager.onPeerConnect(id);
+        context.__connected = true;
         dispatchContextEvent(context, "connect", id);
     });
 
     context.__peer.on("error", (err) => {
+        context.__network_manager.onPeerError(err);
+        dispatchContextEvent(context, "error", err);
     });
 
     context.__peer.on("close", () => {
-        dispatchContextEvent(context, "disconnect");        
+        context.__network_manager.onPeerClose();
+        context.__connected = false;
+        dispatchContextEvent(context, "disconnect");
     });
 
-    context.__peer.on("connection", (connection) => {
+    context.__peer.on("connection", (conn) => {
+        context.__network_manager.onPeerConnection(conn);
     });
 }
 
 export default function p2pnet() {
     let context = {
-        __on_callbacks: {},
-        ice_server: "",
-        channel: ""
+        __on_callbacks: {}
     };
 
 
@@ -70,13 +133,26 @@ export default function p2pnet() {
         context.__on_callbacks[event].push(callback);
     }
 
-    context.connect = (ice_server, channel_url) => {
+    context.connect = (ice_server, channel_url, network_manager) => {
         if (context.__connected) {
             dispatchContextEvent(context, "error", "Already connected");
+            return;
         }
 
-        context.ice_server = ice_server;
-        context.channel = channel_url;
+        if (network_manager == "gossip") {
+            context.__network_manager = gossipNetworkManager(context);
+        }
+        else if(network_manager == "mesh") {
+            context.__network_manager = meshNetworkManager(context);
+        }
+        else {
+            dispatchContextEvent(context, "error", "Invalid network manager");
+            return;
+        }
+
+        context.__network_manager = network_manager;
+        context.__ice_server = ice_server;
+        context.__channel = channel_url;
 
         connectToIntermediateServer(context);
     }
