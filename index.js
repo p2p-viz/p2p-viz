@@ -14,20 +14,23 @@ const peer_server = ExpressPeerServer(server, {
     path: "/ice",
 });
 
-peer_server.on("connection", (peer, id) => {
-    console.log("connection", id)
-    active_peers[id] = []
+peer_server.on("connection", (peer) => {
+    console.log("connection", peer.id)
+    active_peers[peer.id] = []
 
-    peer.on("disconnect", () => {
-        console.log("disconnect", id)
-        peer_channels = active_peers[id]
-        peer_channels.forEach(channel => {
-            var index = channels[channel].indexOf(id);
-            if (index !== -1) {
-                channels[channel].splice(index, 1);
+    peer.socket._socket.on("close", () => {
+        console.log("disconnect", peer.id)
+        peer_channels = active_peers[peer.id]
+        for (let i = 0; i < peer_channels.length; i++) {
+            let channel = peer_channels[i]
+            if (channels[channel]) {
+                var index = channels[channel].indexOf(peer.id)
+                if (index !== -1) {
+                    channels[channel].splice(index, 1)
+                }
             }
-        })
-        delete active_peers[id]
+        }
+        delete active_peers[peer.id]
     })
 })
 
@@ -40,13 +43,13 @@ app.get("/channels/:channel_id", (req, res) => {
     const peer_id = req.query.peer_id;
     const operation = req.query.operation ? req.query.operation : "register";
 
-    active_peers[peer_id] = "sdfd";
     if (peer_id && active_peers[peer_id]) {
         if (operation == "register") {
             if (!channels[channel_id]) {
                 channels[channel_id] = []
             }
             if (!channels[channel_id].includes(peer_id)) {
+                active_peers[peer_id].push(channel_id)
                 channels[channel_id].push(peer_id)
             }
         }
@@ -62,9 +65,15 @@ app.get("/channels/:channel_id", (req, res) => {
             if (channels[channel_id].length == 0) {
                 delete channels[channel_id]
             }
-        }        
+
+            index = active_peers[peer_id].indexOf(channel_id);
+            if (index !== -1) {
+                active_peers[peer_id].splice(index, 1);
+            }
+        }
     }
 
     res.send(channels[channel_id] ? channels[channel_id] : [])
 })
 
+app.get('/p', (req, res) => res.json(active_peers))
