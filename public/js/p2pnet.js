@@ -37,7 +37,7 @@ function preparePacket(context, message, message_type, target_peer) {
     if (!message) {
         message = {};
     }
-    
+
     let packet = {
         "payload": message,
         "type": message_type,
@@ -45,18 +45,22 @@ function preparePacket(context, message, message_type, target_peer) {
         "sent_time": Date.now(),
         "source": context.__peer_id
     }
-    
+
     if (target_peer) {
         packet["target"] = target_peer;
     }
-    
+
     // Add some sort of message hash maybe??
-    
+
     return packet;
 }
 
 function gossipNetworkManager(context) {
     let manager = {};
+
+
+    manager.__connected_peers = [];
+    manager.__peer_connections = {};
 
     manager.onPeerConnect = (id) => {
 
@@ -157,15 +161,15 @@ function meshNetworkManager(context) {
     manager.sendMessage = (message, message_type, target_peer) => {
         const data = preparePacket(context, message, message_type, target_peer);
         if (target_peer && context.__network_manager.__connected_peers.indexOf(target_peer) != -1) {
-            context.__network_manager.__peer_connections[target_peer].send(data);   
+            context.__network_manager.__peer_connections[target_peer].send(data);
         }
         else {
             for (const peer of context.__network_manager.__connected_peers) {
-                context.__network_manager.__peer_connections[peer].send(data);   
+                context.__network_manager.__peer_connections[peer].send(data);
             }
         }
     }
-    
+
     return manager;
 };
 
@@ -274,10 +278,10 @@ export default function p2pnet() {
     context.__update_db = (data) => {
         const data_db = data.payload;
 
-        if(!data_db) {
+        if (!data_db) {
             return;
         }
-        
+
         dispatchContextEvent(context, "log", `Update database ${data_db.name}`);
 
         const update_type = data_db.type;
@@ -290,13 +294,13 @@ export default function p2pnet() {
             if (!context.has_db(data_db.name)) {
                 context.__create_db(data_db.name)
             }
-            context.__dbs[data_db.name].__update(data_db.data);                
-        }        
+            context.__dbs[data_db.name].__update(data_db.data);
+        }
     }
 
     context.__create_db = (db_name) => {
         dispatchContextEvent(context, "log", `Create database ${db_name}`);
-        
+
         let db_obj = {
             name: db_name,
             callbacks: {},
@@ -305,20 +309,24 @@ export default function p2pnet() {
 
         db_obj.__update = (data) => {
             dispatchContextEvent(context, "log", `Update database ${db_name}`);
-            context.__dbs[db_name].__dispatch_callback("update", data);
+            let updated_items = {};
 
             for (const [key, value] of Object.entries(data)) {
                 if (!(key in context.__dbs[db_name].data)) {
                     context.__dbs[db_name].data[key] = structuredClone(value);
+                    updated_items[key] = context.__dbs[db_name].data[key];
                 }
                 else {
                     const current_value = context.__dbs[db_name].data[key];
-                    if(new Date(current_value.last_updated) < new Date(value.last_updated)) {
+                    if (new Date(current_value.last_updated) < new Date(value.last_updated)) {
+
                         context.__dbs[db_name].data[key] = structuredClone(value);
+                        updated_items[key] = context.__dbs[db_name].data[key];
                     }
                 }
             }
-            
+
+            context.__dbs[db_name].__dispatch_callback("update", updated_items);
         }
 
         db_obj.on = (event, callback) => {
@@ -353,7 +361,7 @@ export default function p2pnet() {
                 type: "update_db",
                 name: db_name,
                 data: data
-            
+
             }, "db");
         }
 
@@ -362,7 +370,7 @@ export default function p2pnet() {
             data[key] = value;
             context.__dbs[db_name].set_many(data);
         }
-        
+
         db_obj.get_raw = (key) => {
             if (typeof key != "string") {
                 dispatchContextEvent(context, "error", "Key must be a string");
@@ -378,7 +386,7 @@ export default function p2pnet() {
 
         db_obj.get = (key) => {
             const value = context.__dbs[db_name].get_raw(key);
-            
+
             if (!value) {
                 return null;
             }
@@ -405,23 +413,23 @@ export default function p2pnet() {
             type: "create_db",
             name: db_name
         }, "db");
-        
+
         return db_obj;
     }
 
     context.has_db = (db_name) => {
         return db_name in context.__dbs;
     }
-    
+
     context.db = (name) => {
         if (name in context.__dbs) {
             return context.__dbs[name];
         }
-        
+
         return context.__create_db(name);
     }
-    
+
     context.on('error', (message) => { console.error("p2pnet error: " + message) })
-    
+
     return context;
 };
