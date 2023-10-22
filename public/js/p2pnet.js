@@ -124,6 +124,10 @@ function gossipNetworkManager(context) {
         else if (data.type && data.type == "db") {
             context.__update_db(data);
         }
+        else if (data.type && data.type == "node_ready") {
+            dispatchContextEvent(context, "node_ready", data.payload.id);
+            dispatchContextEvent(context, "log", `Connection to ${data.payload.id} ready`);
+        }
 
         if (data.target && data.target == context.__peer_id) {
             return;
@@ -135,6 +139,9 @@ function gossipNetworkManager(context) {
         else {
             dispatchContextEvent(context, "log", `Data forwarded to all peers`);
             for (const peer of context.__network_manager.__connected_peers) {
+                // if (peer == data.source) {
+                //     continue;
+                // }
                 context.__network_manager.__peer_connections[peer].send(data);
             }
         }
@@ -190,6 +197,10 @@ function gossipNetworkManager(context) {
                 }, context.__dynamic_network_timeout ? context.__dynamic_network_timeout : 20000);
             }
 
+            context.__network_manager.sendMessage({
+                id: context.__peer_id
+            }, "node_ready", conn.peer);
+
             dispatchContextEvent(context, 'node_connect', conn.peer, type);
             dispatchContextEvent(context, "log", `Connected to ${conn.peer} with conneciton type ${type}`);
         }
@@ -199,14 +210,14 @@ function gossipNetworkManager(context) {
     };
 
     manager.try_connect_to_peers = async (peerList, num_tries) => {
-        if (manager.__connected_peers.length >= manager.MAX_PEERS || !context.__connected) {
+        if (manager.__connected_peers.length >= manager.MAX_PEERS * 0.5 || !context.__connected) {
             return;
         }
 
         shuffle(peerList);
 
         if (!num_tries || (typeof num_tries != "number")) {
-            num_tries = manager.MAX_PEERS - manager.__connected_peers.length;
+            num_tries = manager.MAX_PEERS * 0.5 - manager.__connected_peers.length;
         }
 
         for (const peer of peerList) {
@@ -227,6 +238,9 @@ function gossipNetworkManager(context) {
                 });
             }
             num_tries -= 1;
+            if (num_tries <= 0) {
+                break;
+            }
         }
     };
 
@@ -283,11 +297,17 @@ function meshNetworkManager(context) {
 
     manager.on_data = (data, peer) => {
         dispatchContextEvent(context, "log", `Data recieved from immediate ${peer}`);
+
+
         if (data.type && data.type == "general") {
             dispatchContextEvent(context, "data", data, peer);
         }
         else if (data.type && data.type == "db") {
             context.__update_db(data);
+        }
+        else if (data.type && data.type == "node_ready") {
+            dispatchContextEvent(context, "node_ready", data.payload.id);
+            dispatchContextEvent(context, "log", `Connection to ${data.payload.id} ready`);
         }
     };
 
@@ -308,6 +328,11 @@ function meshNetworkManager(context) {
             conn.on('data', (data) => {
                 context.__network_manager.on_data(data, conn.peer);
             });
+
+            context.__network_manager.sendMessage({
+                id: context.__peer_id
+            }, "node_ready", conn.peer);
+
             dispatchContextEvent(context, 'node_connect', conn.peer, type);
             dispatchContextEvent(context, "log", `Connected to ${conn.peer} with conneciton type ${type}`);
         }
@@ -514,17 +539,17 @@ export default function p2pnet() {
             let updated_items = {};
 
             for (const [key, value] of Object.entries(data)) {
-                if (!(key in context.__dbs[db_name].data)) {
+                if (!(key in context.__dbs[db_name].data) && value.value != null) {
                     context.__dbs[db_name].data[key] = structuredClone(value);
                     updated_items[key] = context.__dbs[db_name].data[key];
                 }
                 else {
                     const current_value = context.__dbs[db_name].data[key];
                     if (new Date(current_value.last_updated) < new Date(value.last_updated)) {
-                        if (value == null) {
+                        if (value.value == null) {
                             delete context.__dbs[db_name].data[key];
                         }
-                        elser {
+                        else {
                             context.__dbs[db_name].data[key] = structuredClone(value);
                             updated_items[key] = context.__dbs[db_name].data[key];
                         }
