@@ -1,0 +1,28 @@
+{
+  "name": "p2pnet",
+  "version": "1.0.0",
+  "description": "A distributed Peer to Peer Network",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/p2p-viz/p2p-viz.git"
+  },
+  "keywords": [
+    "p2p",
+    "decentralized",
+    "gossip"
+  ],
+  "author": "Jaysmito Mukherjee & Meghdip Karmakar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/p2p-viz/p2p-viz/issues"
+  },
+  "homepage": "https://github.com/p2p-viz/p2p-viz#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "peer": "^1.0.1"
+  }
+}

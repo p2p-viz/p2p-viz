@@ -1,155 +1,109 @@
-function randomColor() {
-  var letters = "0123456789ABCDEF";
-  var color = "#";
+import p2pnet from '/js/p2pnet.js'
 
-  for (var i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
+let chat_body = document.getElementById("chat_body")
+let chat_msg = document.getElementById("chat_msg")
+let chat_btn = document.getElementById("chat_btn")
+let dscnt_btn = document.getElementById("dcnt_btn")
+let js_body = document.getElementById("json")
 
-  return color;
-}
+chat_msg.disabled = chat_btn.disabled = true
 
-function fallbackCopyTextToClipboard(text) {
-  var textArea = document.createElement("textarea");
-  textArea.value = text;
-  
-  // Avoid scrolling to bottom
-  textArea.style.top = "0";
-  textArea.style.left = "0";
-  textArea.style.position = "fixed";
+window.network = p2pnet()
 
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
+network.connect({
+    host: "p2pnet.jaysmito.repl.co",
+    port: 443,
+    path: "/peerjs/ice"
+}, "https://p2pnet.jaysmito.repl.co/channels/main", "gossip")
 
-  try {
-    var successful = document.execCommand('copy');
-    var msg = successful ? 'successful' : 'unsuccessful';
-    console.log('Fallback: Copying text command was ' + msg);
-  } catch (err) {
-    console.error('Fallback: Oops, unable to copy', err);
-  }
+network.on("connect", (peer_id) => {
+    chat_msg.disabled = chat_btn.disabled = false
+    chat_body.innerHTML += `<p>joined as ${peer_id}</p>`
+})
 
-  document.body.removeChild(textArea);
-}
+network.on("log", (msg) => {
+    console.log(msg)
+});
 
-function copyTextToClipboard(text) {
-  if (!navigator.clipboard) {
-    fallbackCopyTextToClipboard(text);
-    return;
-  }
-  navigator.clipboard.writeText(text).then(function() {
-    console.log('Async: Copying to clipboard was successful!');
-  }, function(err) {
-    console.error('Async: Could not copy text: ', err);
-  });
-}
+network.on("data", (data) => {
+    chat_body.innerHTML += `<p>${data.source}: ${data.payload}</p>`
+})
 
-function utilsUpdateActivePeersList(containerName)
-{
-    document.getElementById("peerList").innerHTML = ""
+network.on("node_ready", (node_id) => {
+    // chat_body.innerHTML += `<p>${node_id} joined</p>`
+    // js_body.textContent = JSON.stringify(network.__network_manager.__connected_peers, undefined, 2)
+    peers_db.set(network.get_peer_id(), network.get_immediate_peers())
+})
 
-        let tmpList = [];
-        for(const pid in window.peerIdsToAlias) {
-            document.getElementById("peerList").innerHTML += `<li class="activepeer tooltip"><b>${ peerIdsToAlias[pid] }</b><button class="tooltiptext" onclick="copyTextToClipboard('${ pid }')">${ pid }</button></li>`;
-            tmpList.push(window.peerIdsToAlias[pid]);
-        }
-        
-        let items = document.querySelectorAll('.activepeer');
-        for (let i = 0; i < items.length; i++){
-	          items[i].style.background = utilsGenerateColorFromString(tmpList[i]);
-	    }
-}
+network.on("node_disconnect", (node_id) => {
+    // chat_body.innerHTML += `<p>${node_id} left</p>`
+    // js_body.js_body.textContent = JSON.stringify(network.__network_manager.__connected_peers, undefined, 2)
+    peers_db.set(network.get_peer_id(), network.get_immediate_peers())
+})
 
-function utilsGetByValue(map, searchValue) 
-{
-	for (let key in map)
-	{
-		if (map[key] === searchValue) return key;
-	}
-	return  undefined;
-}
+network.on("pre_disconnect", () => {
+    peers_db.set(network.get_peer_id(), null)
+})
 
-async function utilsGetPeers(channel, format = "list") {
-    const res = await fetch("https://ice-server.karmakarmeghdip.repl.co/activePeers?channel=" + encodeURI(channel));
-    const jsondata = await res.json();
-    if(format && format == "list") {
-        let result = [];
-        for (const item in jsondata) {
-            result.push(item);
-        }
-        return result;
+const peers_db = network.db("peers_table");
+
+peers_db.on("update", () => {
+    js_body.textContent = JSON.stringify(peers_db.get_all(), undefined, 2)
+    document.getElementById("map").innerHTML = "";
+    try {
+        document.getElementById("map").appendChild(d3VisualizeGossip());
     }
-    return jsondata;
+    catch (err) {
+        console.log(err)
+    }
+})
+
+
+chat_btn.onclick = () => {
+    chat_body.innerHTML += `<p>${chat_msg.value}</p>`
+    network.send(chat_msg.value)
+    chat_msg.value = ""
 }
 
-async function utilsResgisterPeer(pid, channel, userData = undefined) {
-    const res = await fetch('https://ice-server.karmakarmeghdip.repl.co/registerPeer', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({pid, channel, userData})
-    });
-    if(res.status != 200) {
-        console.error("Failed to register peer id");
-        return false;
-    }
-    return true;
+dscnt_btn.onclick = () => {
+    network.disconnect()
 }
 
-function utilsSyntaxHighlight(json) {
-    if (typeof json != 'string') {
-         json = JSON.stringify(json, undefined, 2);
-    }
-    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-        var cls = 'number';
-        if (/^"/.test(match)) {
-            if (/:$/.test(match)) {
-                cls = 'key';
-            } else {
-                cls = 'string';
-            }
-        } else if (/true|false/.test(match)) {
-            cls = 'boolean';
-        } else if (/null/.test(match)) {
-            cls = 'null';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-    });
-}
+
+
+// -----------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
 
 const cyrb53 = (str, seed = 0) => {
-    if(!str) str = "";
-	let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
-	for(let i = 0, ch; i < str.length; i++) {
-		ch = str.charCodeAt(i);
-		h1 = Math.imul(h1 ^ ch, 2654435761);
-		h2 = Math.imul(h2 ^ ch, 1597334677);
-	}
-	h1  = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
-	h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-	h2  = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
-	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-	
-	return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    if (!str) str = "";
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };
 
 function utilsGenerateColorFromString(str) {
-  const hash = cyrb53(str);
+    const hash = cyrb53(str);
 
-  // Generate RGB values from the hash
-  const r = (hash & 0xff0000) >> 16;
-  const g = (hash & 0x00ff00) >> 8;
-  const b = hash & 0x0000ff;
+    // Generate RGB values from the hash
+    const r = (hash & 0xff0000) >> 16;
+    const g = (hash & 0x00ff00) >> 8;
+    const b = hash & 0x0000ff;
 
-  // Construct the color string in hexadecimal format
-  const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    // Construct the color string in hexadecimal format
+    const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 
-  return color;
+    return color;
 }
+
 
 
 // Copyright 2021 Observable, Inc.
@@ -317,4 +271,55 @@ function ForceGraph({
             color
         }
     });
+}
+
+function d3VisualizeGossip() {
+    const data = structuredClone(peers_db.get_all())
+
+    // Create an array of nodes and links
+    let nodes = [];
+    let links = [];
+
+    // Iterate through the data and create nodes and links
+    for (let key in data) {
+        // Add current node
+        nodes.push({
+            id: key
+            // id: key
+        });
+
+        // Add links from the current node to its connected nodes
+        let connectedNodes = data[key];
+
+        for (let connectedNode of connectedNodes) {
+            // if (window.peerIdsToAlias[connectedNode]) {
+            links.push({
+                source: key,
+                target: connectedNode
+                // source: key,
+                // target: connectedNode
+            });
+            // }
+        }
+    }
+
+    console.log(nodes, links);
+    // console.log(nodes, links)
+
+    const chart = ForceGraph({
+        nodes,
+        links
+    }, {
+        nodeId: d => d.id,
+        nodeGroup: d => d.group,
+        nodeTitle: d => d.id,
+        linkStrokeWidth: l => Math.sqrt(l.value),
+        width: 600,
+        height: 600,
+        nodeRadius: 10,
+        linkStrength: 0.1,
+        invalidation: null // a promise to stop the simulation when the cell is re-run
+    });
+
+    return chart;
 }
