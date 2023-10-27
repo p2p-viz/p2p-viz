@@ -64,9 +64,9 @@ async function getPeersFromChannel(context) {
     return await res.json();
 }
 
-function preparePacket(context, message, message_type, target_peer) {
-    if (!message_type) {
-        message_type = "general";
+function preparePacket(context, message, messageType, targetPeer) {
+    if (!messageType) {
+        messageType = "general";
     }
 
     if (!message) {
@@ -75,14 +75,14 @@ function preparePacket(context, message, message_type, target_peer) {
 
     let packet = {
         "payload": message,
-        "type": message_type,
+        "type": messageType,
         "network_type": context.__network_manager_type,
         "sent_time": Date.now(),
         "source": context.__peer_id
     }
 
-    if (target_peer) {
-        packet["target"] = target_peer;
+    if (targetPeer) {
+        packet["target"] = targetPeer;
     }
 
     const hash = cyrb53(JSON.stringify(packet));
@@ -148,7 +148,7 @@ function gossipNetworkManager(context) {
     };
 
 
-    manager.prepare_connection = async (conn, type) => {
+    manager.prepareConnection = async (conn, type) => {
         if (context.__network_manager.__connected_peers.indexOf(conn.peer) == -1) {
 
             if (manager.__connected_peers.length >= manager.MAX_PEERS) {
@@ -209,15 +209,15 @@ function gossipNetworkManager(context) {
         }
     };
 
-    manager.try_connect_to_peers = async (peerList, num_tries) => {
+    manager.tryConnectToPeers = async (peerList, numTries) => {
         if (manager.__connected_peers.length >= manager.MAX_PEERS * 0.5 || !context.__connected) {
             return;
         }
 
         shuffle(peerList);
 
-        if (!num_tries || (typeof num_tries != "number")) {
-            num_tries = manager.MAX_PEERS * 0.5 - manager.__connected_peers.length;
+        if (!numTries || (typeof numTries != "number")) {
+            numTries = manager.MAX_PEERS * 0.5 - manager.__connected_peers.length;
         }
 
         for (const peer of peerList) {
@@ -237,8 +237,8 @@ function gossipNetworkManager(context) {
                     context.__network_manager.try_connect_to_peers(peerList);
                 });
             }
-            num_tries -= 1;
-            if (num_tries <= 0) {
+            numTries -= 1;
+            if (numTries <= 0) {
                 break;
             }
         }
@@ -247,7 +247,7 @@ function gossipNetworkManager(context) {
     manager.onPeerConnect = async (id) => {
         context.__network_manager.__is_registered = true;
         const peersList = await registerPeerToChannel(context);
-        await context.__network_manager.try_connect_to_peers(peersList);
+        await context.__network_manager.tryConnectToPeers(peersList);
     };
 
     manager.onPeerError = (err) => {
@@ -268,14 +268,14 @@ function gossipNetworkManager(context) {
         }
     };
 
-    manager.sendMessage = (message, message_type, target_peer) => {
-        const data = preparePacket(context, message, message_type, target_peer);
+    manager.sendMessage = (message, messageType, targetPeer) => {
+        const data = preparePacket(context, message, messageType, targetPeer);
 
         const hash = cyrb53(JSON.stringify(data));
         manager.__forwarded_hashes.push(hash);
 
-        if (target_peer && context.__network_manager.__connected_peers.indexOf(target_peer) != -1) {
-            context.__network_manager.__peer_connections[target_peer].send(data);
+        if (targetPeer && context.__network_manager.__connected_peers.indexOf(targetPeer) != -1) {
+            context.__network_manager.__peer_connections[targetPeer].send(data);
         }
         else {
             for (const peer of context.__network_manager.__connected_peers) {
@@ -295,7 +295,7 @@ function meshNetworkManager(context) {
     manager.__connected_peers = [];
     manager.__peer_connections = {};
 
-    manager.on_data = (data, peer) => {
+    manager.onData = (data, peer) => {
         dispatchContextEvent(context, "log", `Data recieved from immediate ${peer}`);
 
 
@@ -311,7 +311,7 @@ function meshNetworkManager(context) {
         }
     };
 
-    manager.prepare_connection = (conn, type) => {
+    manager.prepareConnection = (conn, type) => {
         if (context.__network_manager.__connected_peers.indexOf(conn.peer) == -1) {
             context.__network_manager.__connected_peers.push(conn.peer);
             context.__network_manager.__peer_connections[conn.peer] = conn;
@@ -341,7 +341,7 @@ function meshNetworkManager(context) {
         }
     };
 
-    manager.try_connect_to_peers = async (peerList) => {
+    manager.tryConnectToPeers = async (peerList) => {
         if (!context.__connected) {
             return;
         }
@@ -408,18 +408,18 @@ function setupAutoPeerDestroy(context) {
 
 function connectToIntermediateServer(context) {
 
-    const ice_server = context.__ice_server;
+    const iceServer = context.__ice_server;
 
-    if (!ice_server || !ice_server.host || !ice_server.port || !ice_server.path) {
+    if (!iceServer || !iceServer.host || !iceServer.port || !iceServer.path) {
         dispatchContextEvent(context, "error", "Invalid ICE server settings");
         return;
     }
 
     context.__peer = new Peer(undefined, {
-        host: ice_server.host,
-        port: ice_server.port,
-        secure: (ice_server.port == 443),
-        path: ice_server.path
+        host: iceServer.host,
+        port: iceServer.port,
+        secure: (iceServer.port == 443),
+        path: iceServer.path
     });
 
     setupAutoPeerDestroy(context);
@@ -462,20 +462,20 @@ export default function p2pnet() {
         context.__on_callbacks[event].push(callback);
     }
 
-    context.connect = (ice_server, channel_url, network_manager) => {
+    context.connect = (iceServer, channelUrl, networkManager) => {
         if (context.__connected) {
             dispatchContextEvent(context, "error", "Already connected");
             return;
         }
 
-        context._network_manager_type = network_manager;
-        context.__ice_server = ice_server;
-        context.__channel = channel_url;
+        context._network_manager_type = networkManager;
+        context.__ice_server = iceServer;
+        context.__channel = channelUrl;
 
-        if (network_manager == "gossip") {
+        if (networkManager == "gossip") {
             context.__network_manager = gossipNetworkManager(context);
         }
-        else if (network_manager == "mesh") {
+        else if (networkManager == "mesh") {
             context.__network_manager = meshNetworkManager(context);
         }
         else {
@@ -525,59 +525,59 @@ export default function p2pnet() {
         }
     }
 
-    context.__create_db = (db_name) => {
-        dispatchContextEvent(context, "log", `Create database ${db_name}`);
+    context.__create_db = (dbName) => {
+        dispatchContextEvent(context, "log", `Create database ${dbName}`);
 
-        let db_obj = {
-            name: db_name,
+        let dbObj = {
+            name: dbName,
             callbacks: {},
             data: {}
         };
 
-        db_obj.__update = (data) => {
-            dispatchContextEvent(context, "log", `Update database ${db_name}`);
-            let updated_items = {};
+        dbObj.__update = (data) => {
+            dispatchContextEvent(context, "log", `Update database ${dbName}`);
+            let updatedItems = {};
 
             for (const [key, value] of Object.entries(data)) {
-                if (!(key in context.__dbs[db_name].data) && value.value != null) {
-                    context.__dbs[db_name].data[key] = structuredClone(value);
-                    updated_items[key] = context.__dbs[db_name].data[key];
+                if (!(key in context.__dbs[dbName].data) && value.value != null) {
+                    context.__dbs[dbName].data[key] = structuredClone(value);
+                    updatedItems[key] = context.__dbs[dbName].data[key];
                 }
                 else {
-                    const current_value = context.__dbs[db_name].data[key];
+                    const current_value = context.__dbs[dbName].data[key];
                     if (new Date(current_value.last_updated) < new Date(value.last_updated)) {
                         if (value.value == null) {
-                            delete context.__dbs[db_name].data[key];
+                            delete context.__dbs[dbName].data[key];
                         }
                         else {
-                            context.__dbs[db_name].data[key] = structuredClone(value);
-                            updated_items[key] = context.__dbs[db_name].data[key];
+                            context.__dbs[dbName].data[key] = structuredClone(value);
+                            updatedItems[key] = context.__dbs[dbName].data[key];
                         }
                     }
                 }
             }
 
-            context.__dbs[db_name].__dispatch_callback("update", updated_items);
+            context.__dbs[dbName].__dispatch_callback("update", updatedItems);
         }
 
-        db_obj.on = (event, callback) => {
-            if (!(event in context.__dbs[db_name].callbacks)) {
-                context.__dbs[db_name].callbacks[event] = [];
+        dbObj.on = (event, callback) => {
+            if (!(event in context.__dbs[dbName].callbacks)) {
+                context.__dbs[dbName].callbacks[event] = [];
             }
-            context.__dbs[db_name].callbacks[event].push(callback);
+            context.__dbs[dbName].callbacks[event].push(callback);
         }
 
-        db_obj.__dispatch_callback = (event, ...args) => {
-            if (!(event in db_obj.callbacks)) {
+        dbObj.__dispatch_callback = (event, ...args) => {
+            if (!(event in dbObj.callbacks)) {
                 return;
             }
-            for (let callback of db_obj.callbacks[event]) {
+            for (let callback of dbObj.callbacks[event]) {
                 callback(...args);
             }
         }
 
-        db_obj.set_many = (data) => {
-            dispatchContextEvent(context, "log", `Set database ${db_name}`);
+        dbObj.set_many = (data) => {
+            dispatchContextEvent(context, "log", `Set database ${dbName}`);
             for (const [key, value] of Object.entries(data)) {
                 let data2 = {
                     value: structuredClone(value),
@@ -585,38 +585,38 @@ export default function p2pnet() {
                     last_updated_by: context.__peer_id
                 };
                 data[key] = data2;
-                context.__dbs[db_name].data[key] = data2;
+                context.__dbs[dbName].data[key] = data2;
             }
-            context.__dbs[db_name].__dispatch_callback("update", data);
+            context.__dbs[dbName].__dispatch_callback("update", data);
             context.__network_manager.sendMessage({
                 type: "update_db",
-                name: db_name,
+                name: dbName,
                 data: data
 
             }, "db");
         }
 
-        db_obj.set = (key, value) => {
+        dbObj.set = (key, value) => {
             let data = {};
             data[key] = value;
-            context.__dbs[db_name].set_many(data);
+            context.__dbs[dbName].set_many(data);
         }
 
-        db_obj.get_raw = (key) => {
+        dbObj.get_raw = (key) => {
             if (typeof key != "string") {
                 dispatchContextEvent(context, "error", "Key must be a string");
                 return;
             }
 
-            if (!(key in context.__dbs[db_name].data)) {
+            if (!(key in context.__dbs[dbName].data)) {
                 return null;
             }
 
-            return structuredClone(context.__dbs[db_name].data[key]);
+            return structuredClone(context.__dbs[dbName].data[key]);
         }
 
-        db_obj.get = (key) => {
-            const value = context.__dbs[db_name].get_raw(key);
+        dbObj.get = (key) => {
+            const value = context.__dbs[dbName].get_raw(key);
 
             if (!value) {
                 return null;
@@ -625,9 +625,9 @@ export default function p2pnet() {
             return value.value;
         }
 
-        db_obj.get_all = () => {
+        dbObj.get_all = () => {
             let dat = {};
-            for (const [key, value] of Object.entries(context.__dbs[db_name].data)) {
+            for (const [key, value] of Object.entries(context.__dbs[dbName].data)) {
                 dat[key] = value.value;
             }
             return dat;
@@ -638,22 +638,22 @@ export default function p2pnet() {
                 return;
             }
 
-            dispatchContextEvent(context, "log", `Share database ${db_name} with ${node_id}`);
+            dispatchContextEvent(context, "log", `Share database ${dbName} with ${node_id}`);
             context.__network_manager.sendMessage({
                 type: "update_db",
-                name: db_name,
-                data: context.__dbs[db_name].data
+                name: dbName,
+                data: context.__dbs[dbName].data
             }, "db", node_id);
         });
 
-        context.__dbs[db_name] = db_obj;
+        context.__dbs[dbName] = dbObj;
 
         context.__network_manager.sendMessage({
             type: "create_db",
-            name: db_name
+            name: dbName
         }, "db");
 
-        return db_obj;
+        return dbObj;
     }
 
     context.has_db = (db_name) => {
