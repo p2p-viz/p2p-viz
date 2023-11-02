@@ -195,7 +195,7 @@ function gossipNetworkManager(context) {
           } else {
             peersList = await getPeersFromChannel(context);
           }
-          context.__network_manager.try_connect_to_peers(peersList);
+          context.__network_manager.tryConnectToPeers(peersList);
         }
 
         dispatchContextEvent(context, "node_disconnect", conn.peer, type);
@@ -263,7 +263,7 @@ function gossipNetworkManager(context) {
         let conn = context.__peer.connect(peer);
         dispatchContextEvent(context, "log", `Connection sent to ${peer}`);
         conn.on("open", () => {
-          context.__network_manager.prepare_connection(conn, "sent");
+          context.__network_manager.prepareConnection(conn, "sent");
         });
 
         conn.on("error", (err) => {
@@ -293,7 +293,7 @@ function gossipNetworkManager(context) {
       `Connection recieved from ${conn.peer}`
     );
     conn.on("open", (data) => {
-      context.__network_manager.prepare_connection(conn, "recieved");
+      context.__network_manager.prepareConnection(conn, "recieved");
     });
   };
 
@@ -409,7 +409,7 @@ function meshNetworkManager(context) {
         let conn = context.__peer.connect(peer);
         dispatchContextEvent(context, "log", `Connection sent to ${peer}`);
         conn.on("open", () => {
-          context.__network_manager.prepare_connection(conn, "sent");
+          context.__network_manager.prepareConnection(conn, "sent");
         });
       }
     }
@@ -417,7 +417,7 @@ function meshNetworkManager(context) {
 
   manager.onPeerConnect = async (id) => {
     const peersList = await registerPeerToChannel(context);
-    await context.__network_manager.try_connect_to_peers(peersList);
+    await context.__network_manager.tryConnectToPeers(peersList);
   };
 
   manager.onPeerError = (err) => {
