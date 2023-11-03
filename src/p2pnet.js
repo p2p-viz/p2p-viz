@@ -1,3 +1,6 @@
+const Peer = require("peerjs")
+
+
 function dispatchContextEvent(context, event, ...args) {
   const eventCallbacks = context.__on_callbacks[event];
   if (eventCallbacks) {

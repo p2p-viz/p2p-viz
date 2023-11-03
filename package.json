@@ -1,5 +1,5 @@
 {
-  "name": "p2p-viz",
+  "name": "p2pnet",
   "version": "1.0.0",
   "description": "A simple p2p Gossip pubsub implementation",
   "main": "index.js",
@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/p2p-viz/p2p-viz/issues"
   },
-  "homepage": "https://github.com/p2p-viz/p2p-viz#readme"
+  "homepage": "https://github.com/p2p-viz/p2p-viz#readme",
+  "dependencies": {
+    "peerjs": "^1.5.1"
+  }
 }
